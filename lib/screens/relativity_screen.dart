@@ -33,10 +33,12 @@ class _RelativityScreenState extends State<RelativityScreen>
     super.dispose();
   }
 
-  Widget _buildInput(counterService, positionName, number) {
+  Widget _buildInput(RelativityMapper counterService, positionName, number) {
     _onChanged(val) {
 
       counterService.setMappingKeys(number, val);
+//      counterService.stateManagement['n'+number] = val;
+      print(counterService.stateManagement);
 
       var res = double.parse(val);
       setState(() {
@@ -189,7 +191,7 @@ class _RelativityScreenState extends State<RelativityScreen>
           )),
       onPressed: () {
 //        counterService.increment();
-        counterService2.reset();
+        counterService.reset();
 //        counterService.increment();
 //        relativity.reset();
       },
@@ -210,8 +212,8 @@ class Counter {
 
 }
 
-Counter counterService = Counter();
-RelativityMapper counterService2 = RelativityMapper();
+//Counter counterService = Counter();
+RelativityMapper counterService = RelativityMapper();
 
 
 class RelativityMapper with ChangeNotifier {
@@ -260,10 +262,8 @@ class RelativityMapper with ChangeNotifier {
 //  }
 
   setMappingKeys(keyNumber, value) {
-    print('in sesetMappingKeys');
-    var blet = 'n' + keyNumber;
-    print(blet);
-    _stateManagement[blet] = value;
+    _stateManagement['n' + keyNumber.toString()] = value;
+    print(_stateManagement);
   }
 
 //  set stateManagement(value) {
