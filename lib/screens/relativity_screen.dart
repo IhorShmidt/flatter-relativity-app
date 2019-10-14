@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_relativity/classes/relativity_class.dart';
 import 'package:flutter_relativity/utilities/constants.dart';
+import 'package:rxdart/rxdart.dart';
 
 class RelativityScreen extends StatefulWidget {
   @override
@@ -32,8 +33,11 @@ class _RelativityScreenState extends State<RelativityScreen>
     super.dispose();
   }
 
-  Widget _buildInput(positionName, number) {
+  Widget _buildInput(counterService, positionName, number) {
     _onChanged(val) {
+
+      counterService.setMappingKeys(number, val);
+
       var res = double.parse(val);
       setState(() {
         print(res);
@@ -95,15 +99,15 @@ class _RelativityScreenState extends State<RelativityScreen>
     );
   }
 
-  _resultBox() {
-    var res = relativity.getResult().toStringAsFixed(2);
+  _resultBox(snap) {
+//    var res = relativity.getResult().toStringAsFixed(2);
 
     return Container(
         child: ListTile(
             title: Container(
       alignment: Alignment.center,
       child: Text(
-        res,
+        snap.data.toString(),
         style: TextStyle(
             fontFamily: 'OpenSans', fontSize: 30, color: Colors.white),
       ),
@@ -113,7 +117,11 @@ class _RelativityScreenState extends State<RelativityScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        body: AnnotatedRegion<SystemUiOverlayStyle>(
+        body: StreamBuilder(
+        stream:  counterService.stream$,
+        builder: (BuildContext context, AsyncSnapshot snap) {
+
+        return AnnotatedRegion<SystemUiOverlayStyle>(
             value: SystemUiOverlayStyle.light,
             child: GestureDetector(
                 onTap: () => FocusScope.of(context).unfocus(),
@@ -136,36 +144,37 @@ class _RelativityScreenState extends State<RelativityScreen>
                         children: <Widget>[
                           headingText,
                           SizedBox(height: 60.0),
-                          buildFirstRow(),
-                          buildSecondRow(),
+                          buildFirstRow(counterService),
+                          buildSecondRow(counterService),
                           SizedBox(height: 20.0),
-                          _resultBox(),
+                          _resultBox(snap),
                           SizedBox(height: 30.0),
-//                          buildResetButton(), // todo: implement in future
+                          buildResetButton(counterService), // todo: implement in future
                         ],
                       ),
                     ),
                   ),
-                ]))));
+                ])));},
+    ));
   }
 
-  Row buildFirstRow() {
+  Row buildFirstRow(counterService) {
     return Row(children: <Widget>[
-      _buildInput('First', 1),
+      _buildInput(counterService, 'First', 1),
       Spacer(),
-      _buildInput('Second', 2),
+      _buildInput(counterService, 'Second', 2),
     ]);
   }
 
-  Row buildSecondRow() {
+  Row buildSecondRow(counterService) {
     return Row(children: <Widget>[
-      _buildInput('Third', 3),
+      _buildInput(counterService, 'Third', 3),
       Spacer(),
-      _buildInput('Fourth', 4),
+      _buildInput(counterService, 'Fourth', 4),
     ]);
   }
 
-  FlatButton buildResetButton() {
+  FlatButton buildResetButton(counterService) {
     return FlatButton(
       shape: RoundedRectangleBorder(
           borderRadius: new BorderRadius.circular(18.0),
@@ -179,8 +188,112 @@ class _RelativityScreenState extends State<RelativityScreen>
             color: Colors.white,
           )),
       onPressed: () {
-        relativity.reset();
+//        counterService.increment();
+        counterService2.reset();
+//        counterService.increment();
+//        relativity.reset();
       },
     );
   }
+}
+
+
+class Counter {
+  BehaviorSubject _counter = BehaviorSubject.seeded('0');
+  Observable get stream$ => _counter.stream;
+
+  String get current => _counter.value.toString();
+
+  increment() {
+    _counter.add(int.parse(current) + 1);
+  }
+
+}
+
+Counter counterService = Counter();
+RelativityMapper counterService2 = RelativityMapper();
+
+
+class RelativityMapper with ChangeNotifier {
+
+
+  Map _stateManagement = {
+    'n1': 0,
+    'n2': 0,
+    'n3': 0,
+    'n4': 0,
+  };
+
+  Map get stateManagement => _stateManagement;
+
+  BehaviorSubject _counter = BehaviorSubject.seeded('0');
+  Observable get stream$ => _counter.stream;
+
+//  String get current => _counter.value.toString();
+  String get current {
+//    _counter.value.toString();
+    _counter.value = getResult().toString();
+   return _counter.value.toString();
+  }
+
+  reset() {
+    _stateManagement = {
+      'n1': 0,
+      'n2': 0,
+      'n3': 0,
+      'n4': 0,
+    };
+  }
+
+  getResult() {
+    var res = 0.0;
+    conditions
+        .asMap()
+        .forEach((index, value) => value ? res = formulas[index] : null);
+
+    return res;
+  }
+
+
+//  increment() {
+//    _counter.add(int.parse(current) + 1);
+//  }
+
+  setMappingKeys(keyNumber, value) {
+    print('in sesetMappingKeys');
+    var blet = 'n' + keyNumber;
+    print(blet);
+    _stateManagement[blet] = value;
+  }
+
+//  set stateManagement(value) {
+//    print('settingValue');
+//    print(value);
+//    _stateManagement = value;
+//    notifyListeners();
+//  }
+
+//  int result = 0;
+//  String _state = '0';
+//  String get state => _state;
+
+
+  get conditions {
+    return [
+      _stateManagement['n1'] == 0,
+      _stateManagement['n2'] == 0,
+      _stateManagement['n3'] == 0,
+      _stateManagement['n4'] == 0
+    ];
+  }
+
+  get formulas {
+    return [
+      (_stateManagement['n3'] * _stateManagement['n2']) / _stateManagement['n4'],
+      (_stateManagement['n1'] * _stateManagement['n4']) / _stateManagement['n3'],
+      (_stateManagement['n1'] * _stateManagement['n4']) / _stateManagement['n2'],
+      (_stateManagement['n3'] * _stateManagement['n2']) / _stateManagement['n1']
+    ];
+  }
+
 }
