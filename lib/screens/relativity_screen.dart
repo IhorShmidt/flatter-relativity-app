@@ -70,7 +70,7 @@ class _RelativityScreenState extends State<RelativityScreen>
           width: 120.0,
           padding: EdgeInsets.only(left: 35, bottom: 15.0),
           child: TextField(
-            textInputAction: TextInputAction.continueAction,
+            textInputAction: TextInputAction.next,
             keyboardType: TextInputType.number,
             onChanged: _onChanged,
             style: TextStyle(color: Colors.white, fontFamily: 'OpenSans'),
